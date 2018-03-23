@@ -6,6 +6,7 @@
 //
 
 #import "MPVungleRouter.h"
+#import "VungleAdvancedBidder.h"
 #import "MPInstanceProvider+Vungle.h"
 #import "MPLogging.h"
 #import "VungleInstanceMediationSettings.h"
@@ -34,6 +35,12 @@ typedef NS_ENUM(NSUInteger, SDKInitializeState) {
 @property (nonatomic, strong) NSMutableDictionary *delegatesDic;
 @property (nonatomic, strong) NSMutableDictionary *waitingListDic;
 
+/**
+ Reference to the Vungle advanced bidder instance. This property should be set
+ by @c VungleAdvancedBidder @c init method.
+ */
+@property (nonatomic, weak) VungleAdvancedBidder * bidder;
+
 @end
 
 @implementation MPVungleRouter
@@ -46,6 +53,7 @@ typedef NS_ENUM(NSUInteger, SDKInitializeState) {
         self.delegatesDic = [NSMutableDictionary dictionary];
         self.waitingListDic = [NSMutableDictionary dictionary];
         self.isAdPlaying = NO;
+        self.bidder = nil;
     }
     return self;
 }
@@ -119,6 +127,12 @@ typedef NS_ENUM(NSUInteger, SDKInitializeState) {
     
     NSString *placementId = [info objectForKey:kVunglePlacementIdKey];
     [self.delegatesDic setObject:delegate forKey:placementId];
+    
+    // Remove the bidder token entry for this placement regardless of the result
+    // of the load.
+    if (self.bidder != nil) {
+        [self.bidder removeTokenForPlacement:placementId];
+    }
     
     NSError *error = nil;
     if ([[VungleSDK sharedSDK] loadPlacementWithID:placementId error:&error]) {
